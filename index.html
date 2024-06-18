@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Shop</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+            padding: 2em 0;
+        }
+        form {
+            background: #fff;
+            padding: 2em;
+            margin-bottom: 2em;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        form div {
+            margin-bottom: 1em;
+        }
+        form label {
+            display: block;
+            margin-bottom: .5em;
+        }
+        form input, form select {
+            width: 100%;
+            padding: .5em;
+            font-size: 1em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2em;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: .75em;
+            text-align: left;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn {
+            margin-right: 10px;
+            padding: 5px 10px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .btn.edit {
+            background-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Pet Shop - Agenda de Serviços</h1>
+</header>
+
+<div class="container">
+    <h2>Adicionar Novo Agendamento</h2>
+    <form id="agendaForm">
+        <div>
+            <label for="nome">Nome do Cliente:</label>
+            <input type="text" id="nome" name="nome" required>
+        </div>
+        <div>
+            <label for="data">Data:</label>
+            <input type="date" id="data" name="data" required>
+        </div>
+        <div>
+            <label for="hora">Hora:</label>
+            <input type="time" id="hora" name="hora" required>
+        </div>
+        <div>
+            <label for="servico">Serviço:</label>
+            <select id="servico" name="servico" required>
+                <option value="banho">Banho</option>
+                <option value="banho_tosa">Banho e Tosa</option>
+            </select>
+        </div>
+        <button type="submit">Adicionar Agendamento</button>
+    </form>
+
+    <h2>Agendamentos</h2>
+    <table id="agendaTable">
+        <thead>
+            <tr>
+                <th>Nome do Cliente</th>
+                <th>Data</th>
+                <th>Hora</th>
+                <th>Serviço</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Agendamentos serão inseridos aqui -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    let editIndex = -1;
+
+    document.getElementById('agendaForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+
+        const nome = document.getElementById('nome').value;
+        const data = document.getElementById('data').value;
+        const hora = document.getElementById('hora').value;
+        const servico = document.getElementById('servico').value;
+
+        const agendamento = { nome, data, hora, servico };
+
+        let agendamentos = JSON.parse(localStorage.getItem('agendamentos')) || [];
+
+        if (editIndex === -1) {
+            agendamentos.push(agendamento);
+        } else {
+            agendamentos[editIndex] = agendamento;
+            editIndex = -1;
+        }
+
+        agendamentos.sort((a, b) => new Date(a.data + 'T' + a.hora) - new Date(b.data + 'T' + b.hora));
+        localStorage.setItem('agendamentos', JSON.stringify(agendamentos));
+
+        atualizarTabelaDeAgendamentos();
+        document.getElementById('agendaForm').reset();
+    });
+
+    function adicionarAgendamentoNaTabela(agendamento, index) {
+        const table = document.getElementById('agendaTable').getElementsByTagName('tbody')[0];
+        const newRow = table.insertRow();
+
+        const cellNome = newRow.insertCell(0);
+        const cellData = newRow.insertCell(1);
+        const cellHora = newRow.insertCell(2);
+        const cellServico = newRow.insertCell(3);
+        const cellAcoes = newRow.insertCell(4);
+
+        cellNome.textContent = agendamento.nome;
+        cellData.textContent = agendamento.data;
+        cellHora.textContent = agendamento.hora;
+        cellServico.textContent = agendamento.servico;
+
+        const btnEditar = document.createElement('button');
+        btnEditar.textContent = 'Editar';
+        btnEditar.classList.add('btn', 'edit');
+        btnEditar.onclick = () => editarAgendamento(index);
+
+        const btnApagar = document.createElement('button');
+        btnApagar.textContent = 'Apagar';
+        btnApagar.classList.add('btn');
+        btnApagar.onclick = () => apagarAgendamento(index);
+
+        cellAcoes.appendChild(btnEditar);
+        cellAcoes.appendChild(btnApagar);
+    }
+
+    function atualizarTabelaDeAgendamentos() {
+        const tableBody = document.getElementById('agendaTable').getElementsByTagName('tbody')[0];
+        tableBody.innerHTML = '';
+        const agendamentos = JSON.parse(localStorage.getItem('agendamentos')) || [];
+        agendamentos.forEach((agendamento, index) => adicionarAgendamentoNaTabela(agendamento, index));
+    }
+
+    function carregarAgendamentos() {
+        atualizarTabelaDeAgendamentos();
+    }
+
+    function editarAgendamento(index) {
+        const agendamentos = JSON.parse(localStorage.getItem('agendamentos')) || [];
+        const agendamento = agendamentos[index];
+
+        document.getElementById('nome').value = agendamento.nome;
+        document.getElementById('data').value = agendamento.data;
+        document.getElementById('hora').value = agendamento.hora;
+        document.getElementById('servico').value = agendamento.servico;
+
+        editIndex = index;
+    }
+
+    function apagarAgendamento(index) {
+        let agendamentos = JSON.parse(localStorage.getItem('agendamentos')) || [];
+        agendamentos.splice(index, 1);
+        localStorage.setItem('agendamentos', JSON.stringify(agendamentos));
+        atualizarTabelaDeAgendamentos();
+    }
+
+    window.onload = carregarAgendamentos;
+</script>
+
+</body>
+</html>
